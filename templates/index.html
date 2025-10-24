@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>B.M.B-AI Chat</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="/static/favicon.png" type="image/png">
+  <style>
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background-color: #000;
+      color: #fff;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: #222;
+      padding: 1rem;
+      font-size: 1.2rem;
+      font-weight: bold;
+      border-bottom: 1px solid #333;
+    }
+
+    .back-button {
+      position: absolute;
+      left: 12px;
+      top: 10px;
+      background-color: transparent;
+      border: none;
+      color: #ccc;
+      font-size: 1.1rem;
+      cursor: pointer;
+    }
+
+    .profile img {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+    }
+
+    .content-wrapper {
+      display: flex;
+      flex-direction: column;
+      height: calc(100% - 84px);
+      gap: 12px;
+      padding: 12px;
+    }
+
+    .chat-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow-y: auto;
+      padding: 12px;
+      border-radius: 10px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+    }
+
+    .bubble {
+      max-width: 80%;
+      padding: 12px 16px;
+      border-radius: 12px;
+      line-height: 1.4;
+      word-wrap: break-word;
+      display: inline-block;
+      white-space: pre-wrap;
+    }
+
+    .user {
+      align-self: flex-end;
+      background-color: #1e1e1e;
+    }
+
+    .bot {
+      align-self: flex-start;
+      background-color: #333;
+    }
+
+    .chat-form {
+      display: flex;
+      align-items: center;
+      padding: 10px;
+      background-color: #222;
+      border-top: 1px solid #333;
+      gap: 8px;
+    }
+
+    .chat-form input[type="text"] {
+      flex: 1;
+      padding: 10px 14px;
+      font-size: 1rem;
+      border: 1px solid #444;
+      border-radius: 20px;
+      background-color: #333;
+      color: #fff;
+    }
+
+    .chat-form input::placeholder {
+      color: #aaa;
+    }
+
+    .chat-form button.send {
+      background-color: #4caf50;
+      border: none;
+      border-radius: 50%;
+      width: 42px;
+      height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 18px;
+      cursor: pointer;
+    }
+
+    .typing-indicator {
+      align-self: flex-start;
+      background-color: #333;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 1rem;
+      max-width: 80%;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .typing-indicator span {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      background-color: white;
+      border-radius: 50%;
+      animation: blink 1s infinite;
+    }
+
+    .typing-indicator span:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    .typing-indicator span:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 0.2; }
+      50% { opacity: 1; }
+    }
+
+  </style>
+</head>
+<body>
+
+<header>
+  <button class="back-button" onclick="window.location.href='/lokal'">← Back</button>
+  🧠 B.M.B-AI Chat
+  <div class="profile" style="position:absolute; right:12px;">
+    <img src="/static/favicon.png" alt="Profile">
+  </div>
+</header>
+
+<div class="content-wrapper">
+  <div class="chat-container" id="chat-box">
+    {% if messages %}
+      {% for msg in messages %}
+        <div class="bubble user"><strong>You:</strong> {{ msg.user }}</div>
+        <div class="bubble bot"><strong>B.M.B-AI:</strong> {{ msg.bot }}</div>
+      {% endfor %}
+    {% else %}
+      <div class="bubble bot">{{ greeting or "Hello! I'm B.M.B-AI. Ask me anything." }}</div>
+    {% endif %}
+  </div>
+
+  <form class="chat-form" id="chat-form">
+    <input type="text" id="chat-input" name="message" autocomplete="off" placeholder="Type your message...">
+    <button type="submit" class="send">▶</button>
+  </form>
+</div>
+
+<script>
+  const chatBox = document.getElementById('chat-box');
+  const form = document.getElementById('chat-form');
+  const input = document.getElementById('chat-input');
+
+  function scrollToBottom() {
+    chatBox.scrollTop = chatBox.scrollHeight;
+  }
+
+  function addMessage(role, text) {
+    const div = document.createElement('div');
+    div.className = 'bubble ' + role;
+    if (role === 'user') {
+      div.innerHTML = `<strong>You:</strong> ${escapeHtml(text)}`;
+    } else {
+      div.innerHTML = `<strong><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>B.M.B-AI Chat</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="/static/favicon.png" type="image/png">
+  <style>
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background-color: #000;
+      color: #fff;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: #222;
+      padding: 1rem;
+      font-size: 1.2rem;
+      font-weight: bold;
+      border-bottom: 1px solid #333;
+    }
+
+    .back-button {
+      position: absolute;
+      left: 12px;
+      top: 10px;
+      background-color: transparent;
+      border: none;
+      color: #ccc;
+      font-size: 1.1rem;
+      cursor: pointer;
+    }
+
+    .profile img {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+    }
+
+    .content-wrapper {
+      display: flex;
+      flex-direction: column;
+      height: calc(100% - 84px);
+      gap: 12px;
+      padding: 12px;
+    }
+
+    .chat-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow-y: auto;
+      padding: 12px;
+      border-radius: 10px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+    }
+
+    .bubble {
+      max-width: 80%;
+      padding: 12px 16px;
+      border-radius: 12px;
+      line-height: 1.4;
+      word-wrap: break-word;
+      display: inline-block;
+      white-space: pre-wrap;
+    }
+
+    .user {
+      align-self: flex-end;
+      background-color: #1e1e1e;
+    }
+
+    .bot {
+      align-self: flex-start;
+      background-color: #333;
+    }
+
+    .chat-form {
+      display: flex;
+      align-items: center;
+      padding: 10px;
+      background-color: #222;
+      border-top: 1px solid #333;
+      gap: 8px;
+    }
+
+    .chat-form input[type="text"] {
+      flex: 1;
+      padding: 10px 14px;
+      font-size: 1rem;
+      border: 1px solid #444;
+      border-radius: 20px;
+      background-color: #333;
+      color: #fff;
+    }
+
+    .chat-form input::placeholder {
+      color: #aaa;
+    }
+
+    .chat-form button.send {
+      background-color: #4caf50;
+      border: none;
+      border-radius: 50%;
+      width: 42px;
+      height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 18px;
+      cursor: pointer;
+    }
+
+    .typing-indicator {
+      align-self: flex-start;
+      background-color: #333;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 1rem;
+      max-width: 80%;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .typing-indicator span {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      background-color: white;
+      border-radius: 50%;
+      animation: blink 1s infinite;
+    }
+
+    .typing-indicator span:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    .typing-indicator span:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 0.2; }
+      50% { opacity: 1; }
+    }
+
+  </style>
+</head>
+<body>
+
+<header>
+  <button class="back-button" onclick="window.location.href='/lokal'">← Back</button>
+  🧠 B.M.B-AI Chat
+  <div class="profile" style="position:absolute; right:12px;">
+    <img src="/static/favicon.png" alt="Profile">
+  </div>
+</header>
+
+<div class="content-wrapper">
+  <div class="chat-container" id="chat-box">
+    {% if messages %}
+      {% for msg in messages %}
+        <div class="bubble user"><strong>You:</strong> {{ msg.user }}</div>
+        <div class="bubble bot"><strong>B.M.B-AI:</strong> {{ msg.bot }}</div>
+      {% endfor %}
+    {% else %}
+      <div class="bubble bot">{{ greeting or "Hello! I'm B.M.B-AI. Ask me anything." }}</div>
+    {% endif %}
+  </div>
+
+  <form class="chat-form" id="chat-form">
+    <input type="text" id="chat-input" name="message" autocomplete="off" placeholder="Type your message...">
+    <button type="submit" class="send">▶</button>
+  </form>
+</div>
+
+<script>
+  const chatBox = document.getElementById('chat-box');
+  const form = document.getElementById('chat-form');
+  const input = document.getElementById('chat-input');
+
+  function scrollToBottom() {
+    chatBox.scrollTop = chatBox.scrollHeight;
+  }
+
+  function addMessage(role, text) {
+    const div = document.createElement('div');
+    div.className = 'bubble ' + role;
+    if (role === 'user') {
+      div.innerHTML = `<strong>You:</strong> ${escapeHtml(text)}`;
+    } else {
+      div.innerHTML = `<strong>B.M.B-AI:</strong> ${escapeHtml(text)}`;
+    }
+    chatBox.appendChild(div);
+    scrollToBottom();
+  }
+
+  function showTypingIndicator() {
+    removeTypingIndicator();
+    const div = document.createElement('div');
+    div.className = 'typing-indicator';
+    div.id = 'typing-indicator';
+    div.innerHTML = `<span></span><span></span><span></span>`;
+    chatBox.appendChild(div);
+    scrollToBottom();
+  }
+
+  function removeTypingIndicator() {
+    const el = document.getElementById('typing-indicator');
+    if (el) el.remove();
+  }
+
+  function animateBotReply(text) {
+    removeTypingIndicator();
+    let i = 0;
+    const div = document.createElement('div');
+    div.className = 'bubble bot';
+    div.innerHTML = `<span id="typing"></span>`;
+    chatBox.appendChild(div);
+    const typing = div.querySelector('#typing');
+
+    const interval = setInterval(() => {
+      if (i < text.length) {
+        typing.textContent += text[i];
+        i++;
+        scrollToBottom();
+      } else {
+        clearInterval(interval);
+      }
+    }, 20);
+  }
+
+  function escapeHtml(unsafe) {
+    if (!unsafe && unsafe !== 0) return '';
+    return unsafe
+         .toString()
+         .replace(/&/g, "&amp;")
+         .replace(/</g, "&lt;")
+         .replace(/>/g, "&gt;")
+         .replace(/"/g, "&quot;")
+         .replace(/'/g, "&#039;");
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const message = input.value.trim();
+    if (!message) return;
+
+    addMessage('user', message);
+    input.value = '';
+
+    showTypingIndicator();
+
+    try {
+      const res = await fetch('/chat-gpt-json', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `message=${encodeURIComponent(message)}`
+      });
+
+      if (!res.ok) {
+        removeTypingIndicator();
+        addMessage('bot', 'Error: Server returned ' + res.status);
+        return;
+      }
+
+      const data = await res.json();
+      const reply = data.reply || 'No reply from server.';
+
+      if (reply.startsWith('❌')) {
+        // error returned from backend
+        removeTypingIndicator();
+        addMessage('bot', reply);
+        return;
+      }
+
+      animateBotReply(reply);
+    } catch (err) {
+      removeTypingIndicator();
+      addMessage('bot', 'Connection error: ' + err.message);
+    }
+  });
+
+  // Auto-scroll to bottom on load
+  window.addEventListener('load', () => {
+    scrollToBottom();
+  });
+</script>
+
+</body>
+</html>:</strong> ${escapeHtml(text)}`;
+    }
+    chatBox.appendChild(div);
+    scrollToBottom();
+  }
+
+  function showTypingIndicator() {
+    removeTypingIndicator();
+    const div = document.createElement('div');
+    div.className = 'typing-indicator';
+    div.id = 'typing-indicator';
+    div.innerHTML = `<span></span><span></span><span></span>`;
+    chatBox.appendChild(div);
+    scrollToBottom();
+  }
+
+  function removeTypingIndicator() {
+    const el = document.getElementById('typing-indicator');
+    if (el) el.remove();
+  }
+
+  function animateBotReply(text) {
+    removeTypingIndicator();
+    let i = 0;
+    const div = document.createElement('div');
+    div.className = 'bubble bot';
+    div.innerHTML = `<span id="typing"></span>`;
+    chatBox.appendChild(div);
+    const typing = div.querySelector('#typing');
+
+    const interval = setInterval(() => {
+      if (i < text.length) {
+        typing.textContent += text[i];
+        i++;
+        scrollToBottom();
+      } else {
+        clearInterval(interval);
+      }
+    }, 20);
+  }
+
+  function escapeHtml(unsafe) {
+    if (!unsafe && unsafe !== 0) return '';
+    return unsafe
+         .toString()
+         .replace(/&/g, "&amp;")
+         .replace(/</g, "&lt;")
+         .replace(/>/g, "&gt;")
+         .replace(/"/g, "&quot;")
+         .replace(/'/g, "&#039;");
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const message = input.value.trim();
+    if (!message) return;
+
+    addMessage('user', message);
+    input.value = '';
+
+    showTypingIndicator();
+
+    try {
+      const res = await fetch('/chat-gpt-json', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `message=${encodeURIComponent(message)}`
+      });
+
+      if (!res.ok) {
+        removeTypingIndicator();
+        addMessage('bot', 'Error: Server returned ' + res.status);
+        return;
+      }
+
+      const data = await res.json();
+      const reply = data.reply || 'No reply from server.';
+
+      if (reply.startsWith('❌')) {
+        // error returned from backend
+        removeTypingIndicator();
+        addMessage('bot', reply);
+        return;
+      }
+
+      animateBotReply(reply);
+    } catch (err) {
+      removeTypingIndicator();
+      addMessage('bot', 'Connection error: ' + err.message);
+    }
+  });
+
+  // Auto-scroll to bottom on load
+  window.addEventListener('load', () => {
+    scrollToBottom();
+  });
+</script>
+
+</body>
+</html>
