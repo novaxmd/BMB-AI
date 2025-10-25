@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>B.M.B-GPT</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #0d1117;
+      color: #c9d1d9;
+    }
+    .container {
+      max-width: 800px;
+      margin: auto;
+      padding: 20px;
+    }
+    textarea, input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+      background-color: #161b22;
+      color: #c9d1d9;
+      border: 1px solid #30363d;
+      border-radius: 4px;
+    }
+    button {
+      background-color: #238636;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    form, section {
+      background-color: #0b1220;
+      padding: 16px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    }
+    h1, h2 {
+      margin: 0 0 12px 0;
+      font-size: 1.2rem;
+      color: #e6edf3;
+    }
+    .small {
+      font-size: 0.9rem;
+      color: #9aa5b1;
+    }
+    .response-box {
+      background-color: #071018;
+      padding: 12px;
+      border-radius: 6px;
+      border: 1px solid #21303a;
+      margin-top: 8px;
+      color: #c9d1d9;
+      white-space: pre-wrap;
+    }
+    .controls {
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-top:8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div>
+        <h1>B.M.B-GPT</h1>
+        <div class="small">Use the local model for quick experiments or math evaluation</div>
+      </div>
+      <div>
+        <button onclick="window.location.href='/'">← Back to Chat</button>
+      </div>
+    </header>
+
+    <section id="predict-section">
+      <h2>Predict (Local)</h2>
+      <form id="predict-form" method="post" action="/lokal/predict">
+        <label for="input_text" class="small">Input text or math expression</label>
+        <input type="text" id="input_text" name="input_text" placeholder="e.g. 2+2 or Write a short greeting..." required>
+        <div class="controls">
+          <button type="submit">Predict</button>
+        </div>
+      </form>
+      <div id="predict-response" class="response-box" aria-live="polite"></div>
+    </section>
+
+    <section id="train-section">
+      <h2>Train</h2>
+      <form id="train-form" method="post" action="/lokal/train">
+        <label class="small" for="input_text_train">Input</label>
+        <input type="text" id="input_text_train" name="input_text" placeholder="Input example (e.g. 'Hello')" required>
+        <label class="small" for="output_text_train">Output</label>
+        <input type="text" id="output_text_train" name="output_text" placeholder="Expected output (e.g. 'Hi there')" required>
+        <div class="controls">
+          <button type="submit">Train</button>
+        </div>
+      </form>
+    </section>
+
+    <section id="storage-section">
+      <h2>Model Storage / Management</h2>
+
+      <form id="show-form" method="get" action="/lokal/show">
+        <div class="controls">
+          <button type="submit">Show Local Model Info</button>
+        </div>
+      </form>
+      <div id="show-response" class="response-box"></div>
+
+      <form id="delete-form" method="post" action="/lokal/hapus-model" style="margin-top:8px;">
+        <div class="controls">
+          <button type="submit" style="background:#b02a37">Delete Local Model</button>
+        </div>
+      </form>
+      <div id="delete-response" class="response-box"></div>
+
+      <form id="upload-form" method="post" action="/lokal/upload-model" enctype="multipart/form-data" style="margin-top:8px;">
+        <label class="small" for="model_file">Upload model file</label>
+        <input type="file" id="model_file" name="model_file" accept=".pkl,.bin,.pt">
+        <div class="controls">
+          <button type="submit">Upload Model</button>
+        </div>
+      </form>
+      <div id="upload-response" class="response-box"></div>
+    </section>
+
+    <section id="admin-check-section">
+      <h2>Admin Check</h2>
+      <div class="small">Verify Supabase admin access using a Supabase token (Bearer).</div>
+      <div class="controls" style="margin-top:8px;">
+        <button id="check-admin-btn" type="button">Check Admin</button>
+      </div>
+      <div id="adminStatus" class="response-box" style="display:none;"></div>
+    </section>
+
+  </div>
+
+  <script>
+    // Predict form: will POST and replace response area with server HTML response if returned
+    document.getElementById("predict-form").addEventListener("submit", async function (event) {
+      event.preventDefault();
+      const input = document.getElementById("input_text");
+      const responseBox = document.getElementById("predict-response");
+      responseBox.innerText = "Processing...";
+      try {
+        const formData = new FormData(this);
+        const res = await fetch(this.action, { method: 'POST', body: formData });
+        const text = await res.text();
+        responseBox.innerText = text || "No response.";
+      } catch (err) {
+        responseBox.innerText = "Error: " + err.message;
+      }
+    });
+
+    // Train form: allow normal POST navigation (server redirects back)
+    document.getElementById("train-form").addEventListener("submit", function () {
+      // leave default behavior so server redirect works
+    });
+
+    // Delete model
+    document.getElementById("delete-form").addEventListener("submit", async function (event) {
+      event.preventDefault();
+      const resBox = document.getElementById("delete-response");
+      resBox.innerText = "Processing...";
+      try {
+        const res = await fetch(this.action, { method: 'POST' });
+        const txt = await res.text();
+        resBox.innerText = txt || "No response.";
+      } catch (err) {
+        resBox.innerText = "Error: " + err.message;
+      }
+    });
+
+    // Show model info
+    document.getElementById("show-form").addEventListener("submit", async function (event) {
+      event.preventDefault();
+      const resBox = document.getElementById("show-response");
+      resBox.innerText = "Loading...";
+      try {
+        const res = await fetch(this.action, { method: 'GET' });
+        const txt = await res.text();
+        resBox.innerText = txt || "No response.";
+      } catch (err) {
+        resBox.innerText = "Error: " + err.message;
+      }
+    });
+
+    // Upload model
+    document.getElementById("upload-form").addEventListener("submit", async function (event) {
+      event.preventDefault();
+      const resBox = document.getElementById("upload-response");
+      resBox.innerText = "Uploading...";
+      try {
+        const formData = new FormData(this);
+        const res = await fetch(this.action, { method: 'POST', body: formData });
+        const txt = await res.text();
+        resBox.innerText = txt || "No response.";
+      } catch (err) {
+        resBox.innerText = "Error: " + err.message;
+      }
+    });
+
+    // Admin check
+    document.getElementById("check-admin-btn").addEventListener("click", async function () {
+      const token = prompt("Enter Supabase token (Bearer):");
+      const box = document.getElementById("adminStatus");
+      box.style.display = "block";
+      if (!token) {
+        box.innerHTML = `❌ Token not entered`;
+        box.style.backgroundColor = "#442222";
+        return;
+      }
+      box.innerHTML = "Checking...";
+      try {
+        const response = await fetch("/admin", {
+          method: "GET",
+          headers: { "Authorization": "Bearer " + token }
+        });
+        const data = await response.json();
+        if (response.ok) {
+          box.innerHTML = `✅ Access allowed<br><strong>Email:</strong> ${data.email}<br><strong>Role:</strong> ${data.role}`;
+          box.style.backgroundColor = "#1e442f";
+        } else {
+          box.innerHTML = `❌ Failed: ${data.detail || "An error occurred"}`;
+          box.style.backgroundColor = "#442222";
+        }
+      } catch (err) {
+        box.innerHTML = `❌ Connection error`;
+        box.style.backgroundColor = "#442222";
+      }
+    });
+  </script>
+</body>
+</html>
